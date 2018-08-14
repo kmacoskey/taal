@@ -56,13 +56,17 @@ t := taal.NewInfra()
 t.Config(config)
 t.Credentials(credentials)
 
-if err := t.Apply(); err != nil {
+if stdout, err := t.Apply(); err != nil {
   panic(fmt.Println("Error applying terraform config"))
 }
 
-if err := t.Destroy(); err != nil {
+fmt.Println(stdout)
+
+if stdout, err := t.Destroy(); err != nil {
   panic(fmt.Println("Error destorying terraform config"))
 }
+
+fmt.Println(stdout)
 ```
 
 This is all you need to know for basic usage. More advanced options are explained below.
@@ -140,7 +144,19 @@ fmt.Println("address: %s", outputs["address"])
 
 ## How to Test
 
+Terraform configuration for Google Compute Cloud is used for testing. Therefore valid credentials for an available GCP project is required to run the tests.
+
 ```sh
+export GOOGLE_APPLICATION_CREDENTIALS=[Filepath to IAM json Credentials]
 make test
+```
+
+Testing creates real infrastructure. Test failures may require manual cleanup of the following resource:
+
+```
+google_compute_project_metadata_item { 
+  key = "my_metadata" 
+  value = "my_value" 
+}
 ```
 
