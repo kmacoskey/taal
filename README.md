@@ -142,6 +142,14 @@ outputs := t.Outputs()
 fmt.Println("address: %s", outputs["address"])
 ```
 
+### Terraform Plugins
+
+In default usage, terraform init downloads and installs the plugins for any providers used in the configuration automatically. In automation environments, it can be desirable to disable this behavior and instead provide a fixed set of plugins already installed on the system where Terraform is running. This then avoids the overhead of re-downloading the plugins on each execution, and allows the system administrator to control which plugins are available.
+
+```go
+t.PluginDir('/location/of/terraforom/plugins')
+```
+
 ## How to Test
 
 Terraform configuration for Google Compute Cloud is used for testing. Therefore valid credentials for an available GCP project is required to run the tests.

@@ -1,7 +1,14 @@
 package taal_test
 
 import (
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,6 +25,7 @@ var _ = Describe("Taal", func() {
 		validTerraformCredentials   []byte
 		validTerraformApplyStdout   string
 		validTerraformDestroyStdout string
+		validPluginDir              string
 		emptyTerraformConfig        []byte
 		emptyTerraformCredentials   []byte
 		nilTerraformConfig          []byte
@@ -38,6 +46,23 @@ var _ = Describe("Taal", func() {
 		nilTerraformCredentials = []byte(``)
 		validTerraformApplyStdout = ApplySuccess
 		validTerraformDestroyStdout = DestroySuccess
+
+		validPluginDir, err = ioutil.TempDir("", "terraform_client_workingdir")
+		Expect(err).NotTo(HaveOccurred())
+
+		terraformGooglePluginUrl := "https://releases.hashicorp.com/terraform-provider-google/1.16.2/terraform-provider-google_1.16.2_darwin_amd64.zip"
+		terraformGooglePluginFilePath := filepath.Join(validPluginDir, "terraform-provider-google_1.16.2_darwin_amd64.zip")
+		err := downloadFile(terraformGooglePluginFilePath, terraformGooglePluginUrl)
+		Expect(err).NotTo(HaveOccurred())
+		cmdEnv := []string{
+			fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
+			fmt.Sprintf("HOME=%s", os.Getenv("HOME")),
+		}
+		args := []string{terraformGooglePluginFilePath, fmt.Sprintf("-d %s", validPluginDir)}
+		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("unzip %s", strings.Join(args, " ")))
+		cmd.Env = cmdEnv
+		err = cmd.Run()
+		Expect(err).NotTo(HaveOccurred())
 
 		validTerraformConfig = []byte(`provider "google" { project = "data-gp-toolsmiths" region = "us-central1" } resource "google_compute_project_metadata_item" "default" { key = "my_metadata" value = "my_value" }`)
 		validTerraformCredentials = []byte(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
@@ -77,6 +102,13 @@ var _ = Describe("Taal", func() {
 			})
 		})
 
+		Context("When setting the plugin directory", func() {
+			It("Should not error", func() {
+				t.PluginDir(validPluginDir)
+				Expect(t.GetPluginDir()).To(Equal(validPluginDir))
+			})
+		})
+
 	})
 
 	// ###########################################
@@ -92,6 +124,7 @@ var _ = Describe("Taal", func() {
 	Describe("Applying infrastructure", func() {
 		BeforeEach(func() {
 			t = NewInfra()
+			t.PluginDir(validPluginDir)
 		})
 
 		Context("When everything goes ok", func() {
@@ -167,6 +200,7 @@ var _ = Describe("Taal", func() {
 	Describe("Destroying infrastructure", func() {
 		BeforeEach(func() {
 			t = NewInfra()
+			t.PluginDir(validPluginDir)
 		})
 
 		Context("When everything goes ok", func() {
@@ -235,3 +269,30 @@ var _ = Describe("Taal", func() {
 	})
 
 })
+
+// DownloadFile will download a url to a local file. It's efficient because it will
+// write as it downloads and not load the whole file into memory.
+func downloadFile(filepath string, url string) error {
+
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

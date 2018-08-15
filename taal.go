@@ -32,6 +32,7 @@ type Infra struct {
 	config      []byte
 	credentials []byte
 	state       []byte
+	pluginDir   string
 }
 
 func NewInfra() *Infra {
@@ -62,10 +63,19 @@ func (terraform *Infra) GetState() []byte {
 	return terraform.state
 }
 
+func (terraform *Infra) PluginDir(pluginDir string) {
+	terraform.pluginDir = pluginDir
+}
+
+func (terraform *Infra) GetPluginDir() string {
+	return terraform.pluginDir
+}
+
 func (terraform *Infra) Apply() (string, error) {
 
 	credentials := terraform.GetCredentials()
 	config := terraform.GetConfig()
+	pluginDir := terraform.GetPluginDir()
 
 	if len(credentials) == 0 {
 		return "", errors.New(ErrorMissingCredentials)
@@ -94,6 +104,10 @@ func (terraform *Infra) Apply() (string, error) {
 		"-input=false",
 		"-get=true",
 		"-backend=false",
+	}
+
+	if len(pluginDir) > 0 {
+		initArgs = append(initArgs, fmt.Sprintf("-plugin-dir=%s", pluginDir))
 	}
 
 	initArgs = append(initArgs, wd)
@@ -138,6 +152,7 @@ func (terraform *Infra) Destroy() (string, error) {
 	credentials := terraform.GetCredentials()
 	config := terraform.GetConfig()
 	state := terraform.GetState()
+	pluginDir := terraform.GetPluginDir()
 
 	if len(credentials) == 0 {
 		return "", errors.New(ErrorMissingCredentials)
@@ -172,6 +187,10 @@ func (terraform *Infra) Destroy() (string, error) {
 		"-input=false",
 		"-get=true",
 		"-backend=false",
+	}
+
+	if len(pluginDir) > 0 {
+		initArgs = append(initArgs, fmt.Sprintf("-plugin-dir=%s", pluginDir))
 	}
 
 	initArgs = append(initArgs, wd)
