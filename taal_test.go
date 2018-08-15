@@ -19,23 +19,25 @@ import (
 var _ = Describe("Taal", func() {
 
 	var (
-		emptyInfra                  *Infra
-		t                           *Infra
-		validTerraformConfig        []byte
-		validTerraformCredentials   []byte
-		validTerraformApplyStdout   string
-		validTerraformDestroyStdout string
-		validPluginDir              string
-		emptyTerraformConfig        []byte
-		emptyTerraformCredentials   []byte
-		nilTerraformConfig          []byte
-		nilTerraformCredentials     []byte
-		invalidTerraformConfig      []byte
-		invalidTerraformCredentials []byte
-		invalidTerraformError       string
-		invalidTerraformStdout      string
-		err                         error
-		stdout                      string
+		t                              *Infra
+		emptyInfra                     *Infra
+		validTerraformConfig           []byte
+		validTerraformConfigWithInputs []byte
+		validTerraformCredentials      []byte
+		validTerraformInputs           map[string]string
+		validTerraformApplyStdout      string
+		validTerraformDestroyStdout    string
+		validPluginDir                 string
+		emptyTerraformConfig           []byte
+		emptyTerraformCredentials      []byte
+		nilTerraformConfig             []byte
+		nilTerraformCredentials        []byte
+		invalidTerraformConfig         []byte
+		invalidTerraformCredentials    []byte
+		invalidTerraformError          string
+		invalidTerraformStdout         string
+		err                            error
+		stdout                         string
 	)
 
 	BeforeEach(func() {
@@ -50,6 +52,7 @@ var _ = Describe("Taal", func() {
 		validPluginDir, err = ioutil.TempDir("", "terraform_client_workingdir")
 		Expect(err).NotTo(HaveOccurred())
 
+		// TODO: Refactor this whole thing into a set of functions
 		terraformGooglePluginUrl := "https://releases.hashicorp.com/terraform-provider-google/1.16.2/terraform-provider-google_1.16.2_darwin_amd64.zip"
 		terraformGooglePluginFilePath := filepath.Join(validPluginDir, "terraform-provider-google_1.16.2_darwin_amd64.zip")
 		err := downloadFile(terraformGooglePluginFilePath, terraformGooglePluginUrl)
@@ -65,7 +68,9 @@ var _ = Describe("Taal", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		validTerraformConfig = []byte(`provider "google" { project = "data-gp-toolsmiths" region = "us-central1" } resource "google_compute_project_metadata_item" "default" { key = "my_metadata" value = "my_value" }`)
+		validTerraformConfigWithInputs = []byte(`variable "key" {} provider "google" { project = "data-gp-toolsmiths" region = "us-central1" } resource "google_compute_project_metadata_item" "default" { key = "my_metadata" value = "my_value" }`)
 		validTerraformCredentials = []byte(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+		validTerraformInputs = map[string]string{"key": "value"}
 		invalidTerraformConfig = []byte(`foo`)
 		invalidTerraformCredentials = []byte(`foo`)
 		invalidTerraformError = "foo"
@@ -140,6 +145,20 @@ var _ = Describe("Taal", func() {
 			})
 		})
 
+		Context("When user inputs are specified", func() {
+			BeforeEach(func() {
+				t.Config(validTerraformConfigWithInputs)
+				t.Credentials(validTerraformCredentials)
+				t.Inputs(validTerraformInputs)
+				stdout, err = t.Apply()
+			})
+			// Overloaded to avoid execessive testing time
+			It("Should return the expected stdout without errors", func() {
+				Expect(stdout).To(ContainSubstring(validTerraformApplyStdout))
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
 		Context("When there is no terraform configuration set", func() {
 			It("Should error when configuration is empty", func() {
 				t.Config(emptyTerraformConfig)
@@ -211,8 +230,24 @@ var _ = Describe("Taal", func() {
 			})
 			// Overloaded to avoid execessive testing time
 			It("Should return the expected stdout and not error", func() {
-				Expect(err).NotTo(HaveOccurred())
 				Expect(stdout).To(ContainSubstring(validTerraformDestroyStdout))
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("When user inputs are provided", func() {
+			BeforeEach(func() {
+				t.Config(validTerraformConfigWithInputs)
+				t.Credentials(validTerraformCredentials)
+				t.Inputs(validTerraformInputs)
+				_, applyErr := t.Apply()
+				Expect(applyErr).NotTo(HaveOccurred())
+				stdout, err = t.Destroy()
+			})
+			// Overloaded to avoid execessive testing time
+			It("Should return the expected stdout and not error", func() {
+				Expect(stdout).To(ContainSubstring(validTerraformDestroyStdout))
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 

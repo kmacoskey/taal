@@ -108,9 +108,9 @@ t.Config(config)
 
 ...
 
-inputs := {
-  name: "foo"
-  instance_type: "n1-standard-1"
+inputs := map[string]string{
+  "name": "foo",
+  "instance_type": "n1-standard-1",
 }
 
 t.Inputs(intputs)

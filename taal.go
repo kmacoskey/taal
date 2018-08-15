@@ -33,6 +33,7 @@ type Infra struct {
 	credentials []byte
 	state       []byte
 	pluginDir   string
+	inputs      map[string]string
 }
 
 func NewInfra() *Infra {
@@ -71,11 +72,20 @@ func (terraform *Infra) GetPluginDir() string {
 	return terraform.pluginDir
 }
 
+func (terraform *Infra) Inputs(inputs map[string]string) {
+	terraform.inputs = inputs
+}
+
+func (terraform *Infra) GetInputs() map[string]string {
+	return terraform.inputs
+}
+
 func (terraform *Infra) Apply() (string, error) {
 
 	credentials := terraform.GetCredentials()
 	config := terraform.GetConfig()
 	pluginDir := terraform.GetPluginDir()
+	inputs := terraform.GetInputs()
 
 	if len(credentials) == 0 {
 		return "", errors.New(ErrorMissingCredentials)
@@ -132,6 +142,15 @@ func (terraform *Infra) Apply() (string, error) {
 		"-input=false", // do not prompt for inputs
 	}
 
+	if len(inputs) > 0 {
+		var intputArgsBuffer bytes.Buffer
+		for k, v := range inputs {
+			intputArgsBuffer.WriteString(fmt.Sprintf("-var %s=%s", k, v))
+		}
+		intputArgs := intputArgsBuffer.String()
+		applyArgs = append(applyArgs, intputArgs)
+	}
+
 	err, stdout, stderr = run(wd, cmdEnv, applyArgs)
 	if err != nil {
 		return stderr, err
@@ -153,6 +172,7 @@ func (terraform *Infra) Destroy() (string, error) {
 	config := terraform.GetConfig()
 	state := terraform.GetState()
 	pluginDir := terraform.GetPluginDir()
+	inputs := terraform.GetInputs()
 
 	if len(credentials) == 0 {
 		return "", errors.New(ErrorMissingCredentials)
@@ -212,6 +232,15 @@ func (terraform *Infra) Destroy() (string, error) {
 	destroyArgs := []string{
 		"destroy",
 		"-force",
+	}
+
+	if len(inputs) > 0 {
+		var intputArgsBuffer bytes.Buffer
+		for k, v := range inputs {
+			intputArgsBuffer.WriteString(fmt.Sprintf("-var %s=%s", k, v))
+		}
+		intputArgs := intputArgsBuffer.String()
+		destroyArgs = append(destroyArgs, intputArgs)
 	}
 
 	err, stdout, stderr = run(wd, cmdEnv, destroyArgs)
