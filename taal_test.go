@@ -133,10 +133,9 @@ var _ = Describe("Taal", func() {
 				t.Credentials(validTerraformCredentials)
 				stdout, err = t.Apply()
 			})
-			It("Should not error", func() {
+			// Overloaded to avoid execessive testing time
+			It("Should return the expected stdout without errors", func() {
 				Expect(err).NotTo(HaveOccurred())
-			})
-			It("Should return the expected stdout", func() {
 				Expect(stdout).To(ContainSubstring(validTerraformApplyStdout))
 			})
 		})
@@ -177,11 +176,10 @@ var _ = Describe("Taal", func() {
 				t.Credentials(validTerraformCredentials)
 				stdout, err = t.Apply()
 			})
-			It("Should error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-			It("Should return the expected stdout", func() {
+			// Overloaded to avoid execessive testing time
+			It("Should return the expected stdout and error", func() {
 				Expect(stdout).To(ContainSubstring(PlanFailure))
+				Expect(err).To(HaveOccurred())
 			})
 		})
 
@@ -211,10 +209,9 @@ var _ = Describe("Taal", func() {
 				Expect(applyErr).NotTo(HaveOccurred())
 				stdout, err = t.Destroy()
 			})
-			It("Should not error", func() {
+			// Overloaded to avoid execessive testing time
+			It("Should return the expected stdout and not error", func() {
 				Expect(err).NotTo(HaveOccurred())
-			})
-			It("Should return the expected stdout", func() {
 				Expect(stdout).To(ContainSubstring(validTerraformDestroyStdout))
 			})
 		})
@@ -258,10 +255,9 @@ var _ = Describe("Taal", func() {
 				t.Config(invalidTerraformConfig)
 				stdout, err = t.Destroy()
 			})
-			It("Should return the expected error", func() {
+			// Overloaded to avoid execessive testing time
+			It("Should return the expected stdout and error", func() {
 				Expect(err).To(HaveOccurred())
-			})
-			It("Should return the expected stdout", func() {
 				Expect(stdout).To(ContainSubstring(PlanFailure))
 			})
 		})

@@ -7,4 +7,4 @@ LDFLAGS:=-ldflags "-X github.com/kmacoskey/taos/app.Version=${VERSION_TAG}"
 default: build
 
 test: clean
-	ginkgo -r -failFast
+	ginkgo -r -failFast -slowSpecThreshold 30
