@@ -2,6 +2,7 @@ package taal
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -78,6 +79,60 @@ func (terraform *Infra) Inputs(inputs map[string]string) {
 
 func (terraform *Infra) GetInputs() map[string]string {
 	return terraform.inputs
+}
+
+type TerraformOutput struct {
+	Sensitive bool   `json:"sensitive"`
+	Type      string `json:"type"`
+	Value     string `json:"value"`
+}
+
+func (terraform *Infra) Outputs() (map[string]string, error) {
+	outputs := map[string]string{}
+	state := terraform.GetState()
+
+	wd, err := ioutil.TempDir("", "terraform_client_workingdir")
+	if err != nil {
+		return outputs, err
+	}
+
+	statefilename := "terraform.tfstate"
+
+	statefile := filepath.Join(wd, statefilename)
+	err = ioutil.WriteFile(statefile, state, 0666)
+	if err != nil {
+		return outputs, err
+	}
+
+	outputsArgs := []string{
+		"output",
+		"-json",
+	}
+
+	outputsArgs = append(outputsArgs, fmt.Sprintf("-state=%s", statefile))
+
+	cmdEnv := []string{
+		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
+		fmt.Sprintf("HOME=%s", os.Getenv("HOME")),
+		// "TF_LOG=DEBUG",
+	}
+
+	err, stdout, _ := run(wd, cmdEnv, outputsArgs)
+	if err != nil {
+		return outputs, err
+	}
+
+	var toutputs map[string]TerraformOutput
+	err = json.Unmarshal([]byte(stdout), &toutputs)
+	if err != nil {
+		return outputs, err
+	}
+
+	for k, v := range toutputs {
+		outputs[k] = v.Value
+	}
+
+	return outputs, nil
 }
 
 func (terraform *Infra) Apply() (string, error) {

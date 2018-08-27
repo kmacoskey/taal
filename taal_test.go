@@ -19,25 +19,28 @@ import (
 var _ = Describe("Taal", func() {
 
 	var (
-		t                              *Infra
-		emptyInfra                     *Infra
-		validTerraformConfig           []byte
-		validTerraformConfigWithInputs []byte
-		validTerraformCredentials      []byte
-		validTerraformInputs           map[string]string
-		validTerraformApplyStdout      string
-		validTerraformDestroyStdout    string
-		validPluginDir                 string
-		emptyTerraformConfig           []byte
-		emptyTerraformCredentials      []byte
-		nilTerraformConfig             []byte
-		nilTerraformCredentials        []byte
-		invalidTerraformConfig         []byte
-		invalidTerraformCredentials    []byte
-		invalidTerraformError          string
-		invalidTerraformStdout         string
-		err                            error
-		stdout                         string
+		t                               *Infra
+		emptyInfra                      *Infra
+		validTerraformConfig            []byte
+		validTerraformConfigWithInputs  []byte
+		validTerraformConfigWithOutputs []byte
+		validTerraformCredentials       []byte
+		validTerraformInputs            map[string]string
+		validTerraformApplyStdout       string
+		validTerraformDestroyStdout     string
+		validPluginDir                  string
+		emptyTerraformConfig            []byte
+		emptyTerraformCredentials       []byte
+		nilTerraformConfig              []byte
+		nilTerraformCredentials         []byte
+		invalidTerraformConfig          []byte
+		invalidTerraformCredentials     []byte
+		invalidTerraformError           string
+		invalidTerraformStdout          string
+		expectedTerraformOutputs        map[string]string
+		outputs                         map[string]string
+		err                             error
+		stdout                          string
 	)
 
 	BeforeEach(func() {
@@ -69,12 +72,14 @@ var _ = Describe("Taal", func() {
 
 		validTerraformConfig = []byte(`provider "google" { project = "data-gp-toolsmiths" region = "us-central1" } resource "google_compute_project_metadata_item" "default" { key = "my_metadata" value = "my_value" }`)
 		validTerraformConfigWithInputs = []byte(`variable "key" {} provider "google" { project = "data-gp-toolsmiths" region = "us-central1" } resource "google_compute_project_metadata_item" "default" { key = "my_metadata" value = "my_value" }`)
+		validTerraformConfigWithOutputs = []byte(`provider "google" { project = "data-gp-toolsmiths" region = "us-central1" } resource "google_compute_project_metadata_item" "default" { key = "my_metadata" value = "my_value" } output "key" { value = "value" } output "foo" { value = "bar" }`)
 		validTerraformCredentials = []byte(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
 		validTerraformInputs = map[string]string{"key": "value"}
 		invalidTerraformConfig = []byte(`foo`)
 		invalidTerraformCredentials = []byte(`foo`)
 		invalidTerraformError = "foo"
 		invalidTerraformStdout = "foo"
+		expectedTerraformOutputs = map[string]string{"key": "value", "foo": "bar"}
 	})
 
 	Describe("Creating new infrastructure", func() {
@@ -294,6 +299,55 @@ var _ = Describe("Taal", func() {
 			It("Should return the expected stdout and error", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(stdout).To(ContainSubstring(PlanFailure))
+			})
+		})
+
+	})
+
+	// #################################################
+	//               _               _
+	//    ___  _   _| |_ _ __  _   _| |_ ___
+	//   / _ \| | | | __| '_ \| | | | __/ __|
+	//  | (_) | |_| | |_| |_) | |_| | |_\__ \
+	//   \___/ \__,_|\__| .__/ \__,_|\__|___/
+	//                  |_|
+	//
+	// #################################################
+	Describe("Using terraform outputs", func() {
+		BeforeEach(func() {
+			t = NewInfra()
+			t.PluginDir(validPluginDir)
+		})
+		AfterEach(func() {
+			_, destroyErr := t.Destroy()
+			Expect(destroyErr).NotTo(HaveOccurred())
+		})
+
+		Context("When everything goes ok", func() {
+			BeforeEach(func() {
+				t.Config(validTerraformConfigWithOutputs)
+				t.Credentials(validTerraformCredentials)
+				_, applyErr := t.Apply()
+				Expect(applyErr).NotTo(HaveOccurred())
+				outputs, err = t.Outputs()
+			})
+			It("Should return the expected outputs", func() {
+				Expect(outputs).To(Equal(expectedTerraformOutputs))
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("When there are no defined outputs", func() {
+			BeforeEach(func() {
+				t.Config(validTerraformConfig)
+				t.Credentials(validTerraformCredentials)
+				_, applyErr := t.Apply()
+				Expect(applyErr).NotTo(HaveOccurred())
+				outputs, err = t.Outputs()
+			})
+			It("Should return no outputs", func() {
+				Expect(outputs).To(BeEmpty())
+				Expect(err).To(HaveOccurred())
 			})
 		})
 
