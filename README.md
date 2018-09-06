@@ -1,10 +1,25 @@
 # Taal
 
-Terraform as a (golang) library.
+## Terraform as a (golang) library.
 
-Terraform is a wonderful pattern and language for interacting with cloud API's. Unfortunately it is by design a standalone utility. The pattern of writing a program that interacts with the terraform standalone utility has been invented many times. This is yet another implentation, but hopefully more generic and re-usable as a golang libary.
+Terraform is a wonderful pattern and language for interacting with cloud API's. Unfortunately, it is still by design, only intended to be used a standalone utility. Refer to this Discussion about [Terraform as a Library](https://github.com/hashicorp/terraform/issues/12582). The pattern of writing a program that interacts with the terraform cli has been invented many times. This is yet another implentation, but hopefully more generic and re-usable as a golang libary.
 
-## Installation
+- [Taal](#taal)
+  * [Terraform as a (golang) library.](#terraform-as-a-golang-library)
+    + [Installation](#installation)
+    + [Basic Use](#basic-use)
+      - [Config](#config)
+      - [Credentials](#credentials)
+      - [Apply](#apply)
+      - [Destroy](#destroy)
+    + [Advanced Use](#advanced-use)
+      - [State](#state)
+      - [Input Variables](#input-variables)
+      - [Outputs](#outputs)
+      - [Plugins](#plugins)
+  * [How to Test](#how-to-test)
+
+### Installation
 
 With a [correctly configured](https://golang.org/doc/install#testing) Go toolchain:
 
@@ -12,11 +27,15 @@ With a [correctly configured](https://golang.org/doc/install#testing) Go toolcha
 go get -u github.com/kmacoskey/taal
 ```
 
-## Examples
+### Basic Use
 
 Lets create some infrastructure. 
 
-The terraform configuration can be HCL or JSON:
+Only with credentials and valid terraform config, can you `terraform apply` and `terraform destroy`.
+
+#### Config
+
+Terraform Config must be provided. The terraform configuration can be [HCL or JSON](https://www.terraform.io/docs/configuration/syntax.html).
 
 ```go
 config := []byte(`
@@ -42,13 +61,15 @@ config := []byte(`
   }`)
 ```
 
-Credentials must be provided:
+#### Credentials
+
+Credentials must be provided.
 
 ```
 credentials := []byte(` Your Credentials `)
 ```
 
-With Credentials and Config, you can terraform apply and destroy:
+#### Apply
 
 ```go
 t := taal.NewInfra()
@@ -59,19 +80,21 @@ t.Credentials(credentials)
 if stdout, err := t.Apply(); err != nil {
   panic(fmt.Println("Error applying terraform config"))
 }
+```
 
-fmt.Println(stdout)
+#### Destroy
 
+```go
 if stdout, err := t.Destroy(); err != nil {
   panic(fmt.Println("Error destorying terraform config"))
 }
-
-fmt.Println(stdout)
 ```
 
 This is all you need to know for basic usage. More advanced options are explained below.
 
-### Terraform State
+### Advanced Use
+
+#### State
 
 The terraform state can be retrieved for exporting and then subsequent uses.
 
@@ -95,7 +118,7 @@ if err := t_new.Destroy(); err != nil
 }
 ```
 
-### Terraform Input Variables
+#### Input Variables
 
 Supply [input variables](https://www.terraform.io/docs/configuration/variables.html).
 
@@ -120,7 +143,7 @@ if err := t.Apply(); err != nil {
 }
 ```
 
-### Terraform Outputs
+#### Outputs
 
 Access terraform outputs.
 
@@ -142,9 +165,9 @@ outputs := t.Outputs()
 fmt.Println("address: %s", outputs["address"])
 ```
 
-### Terraform Plugins
+#### Plugins
 
-In default usage, terraform init downloads and installs the plugins for any providers used in the configuration automatically. In automation environments, it can be desirable to disable this behavior and instead provide a fixed set of plugins already installed on the system where Terraform is running. This then avoids the overhead of re-downloading the plugins on each execution, and allows the system administrator to control which plugins are available.
+In default usage, `terraform init` downloads and installs the plugins for any providers used in the configuration automatically. In automation environments, it can be desirable to disable this behavior and instead provide a fixed set of plugins already installed on the system where Terraform is running. This then avoids the overhead of re-downloading the plugins on each execution, and allows the system administrator to control which plugins are available.
 
 ```go
 t.PluginDir('/location/of/terraforom/plugins')
@@ -152,10 +175,21 @@ t.PluginDir('/location/of/terraforom/plugins')
 
 ## How to Test
 
-Terraform configuration for Google Compute Cloud is used for testing. Therefore valid credentials for an available GCP project is required to run the tests.
+Terraform Config for actual Google Compute Cloud infastructure is used for testing, because good integration testing without mocking a cloud API is hard. Therefore valid credentials for a GCP IAM service account are required to run the tests. The GCP serice account must have the following permissions:
+
+  * **compute.instances.setMetadata** in order to create new metadata
+  * **compute.projects.setCommonInstanceMetadata** in order to create project wide metadata
+  * **compute.instances.get** in order to list existing metadata
+
+Set credentials with an environment variable:
 
 ```sh
 export GOOGLE_APPLICATION_CREDENTIALS=[Filepath to IAM json Credentials]
+```
+
+Run the tests:
+
+```sh
 make test
 ```
 
@@ -167,4 +201,6 @@ google_compute_project_metadata_item {
   value = "my_value" 
 }
 ```
+
+No other GCP resources are used or harmed during the testing of this library.
 
