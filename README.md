@@ -74,8 +74,8 @@ credentials := []byte(` Your Credentials `)
 ```go
 t := taal.NewInfra()
 
-t.Config(config)
-t.Credentials(credentials)
+t.SetConfig(config)
+t.SetCredentials(credentials)
 
 if stdout, err := t.Apply(); err != nil {
   panic(fmt.Println("Error applying terraform config"))
@@ -127,7 +127,7 @@ config := []byte(`
   variable "name" { type = "string" }
   variable "instance_type" { type = "string" }
 `)
-t.Config(config)
+t.SetConfig(config)
 
 ...
 
@@ -136,7 +136,7 @@ inputs := map[string]string{
   "instance_type": "n1-standard-1",
 }
 
-t.Inputs(intputs)
+t.SetInputs(intputs)
 
 if err := t.Apply(); err != nil {
   panic(fmt.Println("Error applying terraform config"))
@@ -152,10 +152,10 @@ config := []byte(`
 output "address" {
   value = "${compute_instance.test.network_interface.0.address}"
 }`)
-t.Config(config)
+t.SetConfig(config)
 
 credentials := []byte(` Your Credentials `)
-t.Credentials(credentials)
+t.SetCredentials(credentials)
 
 if err := t.Apply(); err != nil {
   panic(fmt.Println("Error applying terraform config"))
@@ -170,7 +170,7 @@ fmt.Println("address: %s", outputs["address"])
 In default usage, `terraform init` downloads and installs the plugins for any providers used in the configuration automatically. In automation environments, it can be desirable to disable this behavior and instead provide a fixed set of plugins already installed on the system where Terraform is running. This then avoids the overhead of re-downloading the plugins on each execution, and allows the system administrator to control which plugins are available.
 
 ```go
-t.PluginDir('/location/of/terraforom/plugins')
+t.SetPluginDir('/location/of/terraforom/plugins')
 ```
 
 ## How to Test

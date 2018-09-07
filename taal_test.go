@@ -100,22 +100,22 @@ var _ = Describe("Taal", func() {
 
 		Context("When setting the config", func() {
 			It("Should not error", func() {
-				t.Config([]byte(`foo`))
-				Expect(t.GetConfig()).To(Equal([]byte(`foo`)))
+				t.SetConfig([]byte(`foo`))
+				Expect(t.Config()).To(Equal([]byte(`foo`)))
 			})
 		})
 
 		Context("When setting the credentials", func() {
 			It("Should not error", func() {
-				t.Credentials([]byte(`foo`))
-				Expect(t.GetCredentials()).To(Equal([]byte(`foo`)))
+				t.SetCredentials([]byte(`foo`))
+				Expect(t.Credentials()).To(Equal([]byte(`foo`)))
 			})
 		})
 
 		Context("When setting the plugin directory", func() {
 			It("Should not error", func() {
-				t.PluginDir(validPluginDir)
-				Expect(t.GetPluginDir()).To(Equal(validPluginDir))
+				t.SetPluginDir(validPluginDir)
+				Expect(t.PluginDir()).To(Equal(validPluginDir))
 			})
 		})
 
@@ -134,13 +134,13 @@ var _ = Describe("Taal", func() {
 	Describe("Applying infrastructure", func() {
 		BeforeEach(func() {
 			t = NewInfra()
-			t.PluginDir(validPluginDir)
+			t.SetPluginDir(validPluginDir)
 		})
 
 		Context("When everything goes ok", func() {
 			BeforeEach(func() {
-				t.Config(validTerraformConfig)
-				t.Credentials(validTerraformCredentials)
+				t.SetConfig(validTerraformConfig)
+				t.SetCredentials(validTerraformCredentials)
 				stdout, err = t.Apply()
 			})
 			// Overloaded to avoid execessive testing time
@@ -152,9 +152,9 @@ var _ = Describe("Taal", func() {
 
 		Context("When user inputs are specified", func() {
 			BeforeEach(func() {
-				t.Config(validTerraformConfigWithInputs)
-				t.Credentials(validTerraformCredentials)
-				t.Inputs(validTerraformInputs)
+				t.SetConfig(validTerraformConfigWithInputs)
+				t.SetCredentials(validTerraformCredentials)
+				t.SetInputs(validTerraformInputs)
 				stdout, err = t.Apply()
 			})
 			// Overloaded to avoid execessive testing time
@@ -166,14 +166,14 @@ var _ = Describe("Taal", func() {
 
 		Context("When there is no terraform configuration set", func() {
 			It("Should error when configuration is empty", func() {
-				t.Config(emptyTerraformConfig)
-				t.Credentials(validTerraformCredentials)
+				t.SetConfig(emptyTerraformConfig)
+				t.SetCredentials(validTerraformCredentials)
 				_, err := t.Apply()
 				Expect(err).To(MatchError(ErrorMissingConfig))
 			})
 			It("Should error when configuration is nil", func() {
-				t.Config(nilTerraformConfig)
-				t.Credentials(validTerraformCredentials)
+				t.SetConfig(nilTerraformConfig)
+				t.SetCredentials(validTerraformCredentials)
 				_, err := t.Apply()
 				Expect(err).To(MatchError(ErrorMissingConfig))
 			})
@@ -181,14 +181,14 @@ var _ = Describe("Taal", func() {
 
 		Context("When there are no credentials set", func() {
 			It("Should error when credentials is empty", func() {
-				t.Config(validTerraformConfig)
-				t.Credentials(emptyTerraformCredentials)
+				t.SetConfig(validTerraformConfig)
+				t.SetCredentials(emptyTerraformCredentials)
 				_, err := t.Apply()
 				Expect(err).To(MatchError(ErrorMissingCredentials))
 			})
 			It("Should error when credentials is nil", func() {
-				t.Config(validTerraformConfig)
-				t.Credentials(nilTerraformCredentials)
+				t.SetConfig(validTerraformConfig)
+				t.SetCredentials(nilTerraformCredentials)
 				_, err := t.Apply()
 				Expect(err).To(MatchError(ErrorMissingCredentials))
 			})
@@ -196,8 +196,8 @@ var _ = Describe("Taal", func() {
 
 		Context("When the terraform apply fails", func() {
 			BeforeEach(func() {
-				t.Config(invalidTerraformConfig)
-				t.Credentials(validTerraformCredentials)
+				t.SetConfig(invalidTerraformConfig)
+				t.SetCredentials(validTerraformCredentials)
 				stdout, err = t.Apply()
 			})
 			// Overloaded to avoid execessive testing time
@@ -222,13 +222,13 @@ var _ = Describe("Taal", func() {
 	Describe("Destroying infrastructure", func() {
 		BeforeEach(func() {
 			t = NewInfra()
-			t.PluginDir(validPluginDir)
+			t.SetPluginDir(validPluginDir)
 		})
 
 		Context("When everything goes ok", func() {
 			BeforeEach(func() {
-				t.Config(validTerraformConfig)
-				t.Credentials(validTerraformCredentials)
+				t.SetConfig(validTerraformConfig)
+				t.SetCredentials(validTerraformCredentials)
 				_, applyErr := t.Apply()
 				Expect(applyErr).NotTo(HaveOccurred())
 				stdout, err = t.Destroy()
@@ -242,9 +242,9 @@ var _ = Describe("Taal", func() {
 
 		Context("When user inputs are provided", func() {
 			BeforeEach(func() {
-				t.Config(validTerraformConfigWithInputs)
-				t.Credentials(validTerraformCredentials)
-				t.Inputs(validTerraformInputs)
+				t.SetConfig(validTerraformConfigWithInputs)
+				t.SetCredentials(validTerraformCredentials)
+				t.SetInputs(validTerraformInputs)
 				_, applyErr := t.Apply()
 				Expect(applyErr).NotTo(HaveOccurred())
 				stdout, err = t.Destroy()
@@ -258,14 +258,14 @@ var _ = Describe("Taal", func() {
 
 		Context("When there is no terraform configuration set", func() {
 			It("Should error when configuration is empty", func() {
-				t.Config(emptyTerraformConfig)
-				t.Credentials(validTerraformCredentials)
+				t.SetConfig(emptyTerraformConfig)
+				t.SetCredentials(validTerraformCredentials)
 				_, err = t.Destroy()
 				Expect(err).To(MatchError(ErrorMissingConfig))
 			})
 			It("Should error when configuration is nil", func() {
-				t.Config(nilTerraformConfig)
-				t.Credentials(validTerraformCredentials)
+				t.SetConfig(nilTerraformConfig)
+				t.SetCredentials(validTerraformCredentials)
 				_, err = t.Destroy()
 				Expect(err).To(MatchError(ErrorMissingConfig))
 			})
@@ -273,14 +273,14 @@ var _ = Describe("Taal", func() {
 
 		Context("When there are no credentials set", func() {
 			It("Should error when credentials is empty", func() {
-				t.Config(validTerraformConfig)
-				t.Credentials(emptyTerraformCredentials)
+				t.SetConfig(validTerraformConfig)
+				t.SetCredentials(emptyTerraformCredentials)
 				_, err := t.Destroy()
 				Expect(err).To(MatchError(ErrorMissingCredentials))
 			})
 			It("Should error when credentials is nil", func() {
-				t.Config(validTerraformConfig)
-				t.Credentials(nilTerraformCredentials)
+				t.SetConfig(validTerraformConfig)
+				t.SetCredentials(nilTerraformCredentials)
 				_, err := t.Destroy()
 				Expect(err).To(MatchError(ErrorMissingCredentials))
 			})
@@ -288,11 +288,11 @@ var _ = Describe("Taal", func() {
 
 		Context("When the terraform destroy fails", func() {
 			BeforeEach(func() {
-				t.Config(validTerraformConfig)
-				t.Credentials(validTerraformCredentials)
+				t.SetConfig(validTerraformConfig)
+				t.SetCredentials(validTerraformCredentials)
 				_, applyErr := t.Apply()
 				Expect(applyErr).NotTo(HaveOccurred())
-				t.Config(invalidTerraformConfig)
+				t.SetConfig(invalidTerraformConfig)
 				stdout, err = t.Destroy()
 			})
 			// Overloaded to avoid execessive testing time
@@ -316,7 +316,7 @@ var _ = Describe("Taal", func() {
 	Describe("Using terraform outputs", func() {
 		BeforeEach(func() {
 			t = NewInfra()
-			t.PluginDir(validPluginDir)
+			t.SetPluginDir(validPluginDir)
 		})
 		AfterEach(func() {
 			_, destroyErr := t.Destroy()
@@ -325,8 +325,8 @@ var _ = Describe("Taal", func() {
 
 		Context("When everything goes ok", func() {
 			BeforeEach(func() {
-				t.Config(validTerraformConfigWithOutputs)
-				t.Credentials(validTerraformCredentials)
+				t.SetConfig(validTerraformConfigWithOutputs)
+				t.SetCredentials(validTerraformCredentials)
 				_, applyErr := t.Apply()
 				Expect(applyErr).NotTo(HaveOccurred())
 				outputs, err = t.Outputs()
@@ -339,8 +339,8 @@ var _ = Describe("Taal", func() {
 
 		Context("When there are no defined outputs", func() {
 			BeforeEach(func() {
-				t.Config(validTerraformConfig)
-				t.Credentials(validTerraformCredentials)
+				t.SetConfig(validTerraformConfig)
+				t.SetCredentials(validTerraformCredentials)
 				_, applyErr := t.Apply()
 				Expect(applyErr).NotTo(HaveOccurred())
 				outputs, err = t.Outputs()

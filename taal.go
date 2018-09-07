@@ -20,15 +20,6 @@ const (
 	PlanFailure             = "There are some problems with the configuration"
 )
 
-type Terraform interface {
-	Config([]byte)
-	GetConfig() []byte
-	Credentials([]byte)
-	GetCredentials() []byte
-	Apply() (string, error)
-	Destroy() (string, error)
-}
-
 type Infra struct {
 	config      []byte
 	credentials []byte
@@ -41,43 +32,43 @@ func NewInfra() *Infra {
 	return &Infra{}
 }
 
-func (terraform *Infra) Config(config []byte) {
+func (terraform *Infra) SetConfig(config []byte) {
 	terraform.config = config
 }
 
-func (terraform *Infra) GetConfig() []byte {
+func (terraform *Infra) Config() []byte {
 	return terraform.config
 }
 
-func (terraform *Infra) Credentials(credentials []byte) {
+func (terraform *Infra) SetCredentials(credentials []byte) {
 	terraform.credentials = credentials
 }
 
-func (terraform *Infra) GetCredentials() []byte {
+func (terraform *Infra) Credentials() []byte {
 	return terraform.credentials
 }
 
-func (terraform *Infra) State(state []byte) {
+func (terraform *Infra) SetState(state []byte) {
 	terraform.state = state
 }
 
-func (terraform *Infra) GetState() []byte {
+func (terraform *Infra) State() []byte {
 	return terraform.state
 }
 
-func (terraform *Infra) PluginDir(pluginDir string) {
+func (terraform *Infra) SetPluginDir(pluginDir string) {
 	terraform.pluginDir = pluginDir
 }
 
-func (terraform *Infra) GetPluginDir() string {
+func (terraform *Infra) PluginDir() string {
 	return terraform.pluginDir
 }
 
-func (terraform *Infra) Inputs(inputs map[string]string) {
+func (terraform *Infra) SetInputs(inputs map[string]string) {
 	terraform.inputs = inputs
 }
 
-func (terraform *Infra) GetInputs() map[string]string {
+func (terraform *Infra) Inputs() map[string]string {
 	return terraform.inputs
 }
 
@@ -89,7 +80,7 @@ type TerraformOutput struct {
 
 func (terraform *Infra) Outputs() (map[string]string, error) {
 	outputs := map[string]string{}
-	state := terraform.GetState()
+	state := terraform.State()
 
 	wd, err := ioutil.TempDir("", "terraform_client_workingdir")
 	if err != nil {
@@ -137,10 +128,10 @@ func (terraform *Infra) Outputs() (map[string]string, error) {
 
 func (terraform *Infra) Apply() (string, error) {
 
-	credentials := terraform.GetCredentials()
-	config := terraform.GetConfig()
-	pluginDir := terraform.GetPluginDir()
-	inputs := terraform.GetInputs()
+	credentials := terraform.Credentials()
+	config := terraform.Config()
+	pluginDir := terraform.PluginDir()
+	inputs := terraform.Inputs()
 
 	if len(credentials) == 0 {
 		return "", errors.New(ErrorMissingCredentials)
@@ -217,17 +208,17 @@ func (terraform *Infra) Apply() (string, error) {
 		return "", err
 	}
 
-	terraform.State(state)
+	terraform.SetState(state)
 
 	return stdout, nil
 }
 
 func (terraform *Infra) Destroy() (string, error) {
-	credentials := terraform.GetCredentials()
-	config := terraform.GetConfig()
-	state := terraform.GetState()
-	pluginDir := terraform.GetPluginDir()
-	inputs := terraform.GetInputs()
+	credentials := terraform.Credentials()
+	config := terraform.Config()
+	state := terraform.State()
+	pluginDir := terraform.PluginDir()
+	inputs := terraform.Inputs()
 
 	if len(credentials) == 0 {
 		return "", errors.New(ErrorMissingCredentials)
